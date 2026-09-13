@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <stdexcept>
 #include <vector>
 
 struct Extent {
@@ -34,7 +35,12 @@ public:
     // pad rows out to whole lines
     , stride_{(cols + kDoublesPerLine - 1) / kDoublesPerLine * kDoublesPerLine}
     , cells_(rows * stride_, 0.0)
-  { }
+  {
+    // the round-up wraps near SIZE_MAX
+    if (stride_ < cols || (rows != 0 && cells_.size() / rows != stride_)) {
+      throw std::length_error("grid extent overflows size_t");
+    }
+  }
 
   double& operator()(std::size_t i, std::size_t j) {
     return cells_[i * stride_ + j];
@@ -67,6 +73,10 @@ inline void apply_stencil(const Grid& old_grid, Grid& new_grid) {
   const GridView<const double> old_view{old_grid.view()};
   const GridView<double> new_view{new_grid.view()};
   const Extent extent{old_view.extent};
+
+  if (extent.rows == 0 || extent.cols == 0) {
+    return;
+  }
 
   // copy top/bottom rows
   std::copy_n(old_view.row(0), extent.cols, new_view.row(0));
