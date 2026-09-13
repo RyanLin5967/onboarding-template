@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <cstddef>
 #include <vector>
 
@@ -35,13 +36,12 @@ inline void apply_stencil(const Grid& old_grid, Grid& new_grid) {
   const std::size_t rows = old_grid.rows();
   const std::size_t cols = old_grid.cols();
 
-  for (std::size_t j = 0; j < cols; ++j) {
-    new_grid(0, j) = old_grid(0, j);
-    new_grid(rows - 1, j) = old_grid(rows - 1, j);
-  }
-
   const double* src = old_grid.data();
   double* dst = new_grid.data();
+
+  // copy top/bottom rows
+  std::copy_n(src, cols, dst);
+  std::copy_n(src + (rows - 1) * cols, cols, dst + (rows - 1) * cols);
 
   for (std::size_t i = 1; i < rows - 1; ++i) {
     const double* above = src + (i - 1) * cols;
