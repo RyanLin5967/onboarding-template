@@ -13,31 +13,39 @@ template <typename T>
 struct GridView {
   T* cells;
   Extent extent;
+  std::size_t stride;
 
-  T* row(std::size_t i) const { return cells + i * extent.cols; }
+  T* row(std::size_t i) const { return cells + i * stride; }
 };
 
 class Grid {
 private:
+  // x86-64 cache line
+  static constexpr std::size_t kLineBytes{64};
+  static constexpr std::size_t kDoublesPerLine{kLineBytes / sizeof(double)};
+
   Extent extent_;
+  std::size_t stride_;
   std::vector<double> cells_;
 
 public:
   Grid(std::size_t rows, std::size_t cols)
     : extent_{rows, cols}
-    , cells_(rows * cols, 0.0)
+    // pad rows out to whole lines
+    , stride_{(cols + kDoublesPerLine - 1) / kDoublesPerLine * kDoublesPerLine}
+    , cells_(rows * stride_, 0.0)
   { }
 
   double& operator()(std::size_t i, std::size_t j) {
-    return cells_[i * extent_.cols + j];
+    return cells_[i * stride_ + j];
   }
 
   double  operator()(std::size_t i, std::size_t j) const {
-    return cells_[i * extent_.cols + j];
+    return cells_[i * stride_ + j];
   }
 
-  GridView<const double> view() const { return {cells_.data(), extent_}; }
-  GridView<double>       view()       { return {cells_.data(), extent_}; }
+  GridView<const double> view() const { return {cells_.data(), extent_, stride_}; }
+  GridView<double>       view()       { return {cells_.data(), extent_, stride_}; }
 };
 
 // out must not overlap the inputs
