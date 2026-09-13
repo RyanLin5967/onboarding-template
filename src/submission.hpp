@@ -4,32 +4,40 @@
 #include <cstddef>
 #include <vector>
 
+struct Extent {
+  std::size_t rows;
+  std::size_t cols;
+};
+
+template <typename T>
+struct GridView {
+  T* cells;
+  Extent extent;
+
+  T* row(std::size_t i) const { return cells + i * extent.cols; }
+};
+
 class Grid {
 private:
-  std::size_t rows_;
-  std::size_t cols_;
+  Extent extent_;
   std::vector<double> cells_;
 
 public:
   Grid(std::size_t rows, std::size_t cols)
-    : rows_{rows}
-    , cols_{cols}
+    : extent_{rows, cols}
     , cells_(rows * cols, 0.0)
   { }
 
   double& operator()(std::size_t i, std::size_t j) {
-    return cells_[i * cols_ + j];
+    return cells_[i * extent_.cols + j];
   }
 
   double  operator()(std::size_t i, std::size_t j) const {
-    return cells_[i * cols_ + j];
+    return cells_[i * extent_.cols + j];
   }
 
-  std::size_t rows() const { return rows_; }
-  std::size_t cols() const { return cols_; }
-
-  double* data() { return cells_.data(); }
-  const double* data() const { return cells_.data(); }
+  GridView<const double> view() const { return {cells_.data(), extent_}; }
+  GridView<double>       view()       { return {cells_.data(), extent_}; }
 };
 
 // out must not overlap the inputs
@@ -47,19 +55,18 @@ inline void apply_stencil_row(
 }
 
 inline void apply_stencil(const Grid& old_grid, Grid& new_grid) {
-  const std::size_t rows = old_grid.rows();
-  const std::size_t cols = old_grid.cols();
-
-  const double* src = old_grid.data();
-  double* dst = new_grid.data();
+  const GridView<const double> old_view{old_grid.view()};
+  const GridView<double> new_view{new_grid.view()};
+  const auto [rows, cols] = old_view.extent;
 
   // copy top/bottom rows
-  std::copy_n(src, cols, dst);
-  std::copy_n(src + (rows - 1) * cols, cols, dst + (rows - 1) * cols);
+  std::copy_n(old_view.row(0), cols, new_view.row(0));
+  std::copy_n(old_view.row(rows - 1), cols, new_view.row(rows - 1));
 
   #pragma omp parallel for schedule(static)
   for (std::size_t i{1}; i < rows - 1; ++i) {
-    apply_stencil_row(src + (i - 1) * cols, src + i * cols, src + (i + 1) * cols,
-                      dst + i * cols, cols);
+    apply_stencil_row(
+      old_view.row(i - 1), old_view.row(i), old_view.row(i + 1), new_view.row(i), cols
+    );
   }
 }
