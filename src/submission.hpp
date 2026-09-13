@@ -48,8 +48,9 @@ inline void apply_stencil_row(
   out[0] = center[0];
   out[cols - 1] = center[cols - 1];
 
+  // g++ -fopenmp won't take braces in an omp loop
   #pragma omp simd
-  for (std::size_t j{1}; j < cols - 1; ++j) {
+  for (std::size_t j = 1; j < cols - 1; ++j) {
     out[j] = 0.5 * center[j] + 0.125 * (above[j] + below[j] + center[j - 1] + center[j + 1]);
   }
 }
@@ -64,7 +65,7 @@ inline void apply_stencil(const Grid& old_grid, Grid& new_grid) {
   std::copy_n(old_view.row(extent.rows - 1), extent.cols, new_view.row(extent.rows - 1));
 
   #pragma omp parallel for schedule(static)
-  for (std::size_t i{1}; i < extent.rows - 1; ++i) {
+  for (std::size_t i = 1; i < extent.rows - 1; ++i) {
     apply_stencil_row(
       old_view.row(i - 1), old_view.row(i), old_view.row(i + 1), new_view.row(i), extent.cols
     );
