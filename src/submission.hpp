@@ -43,7 +43,8 @@ inline void apply_stencil(const Grid& old_grid, Grid& new_grid) {
   std::copy_n(src, cols, dst);
   std::copy_n(src + (rows - 1) * cols, cols, dst + (rows - 1) * cols);
 
-  for (std::size_t i = 1; i < rows - 1; ++i) {
+  #pragma omp parallel for schedule(static)
+  for (std::size_t i{1}; i < rows - 1; ++i) {
     const double* above = src + (i - 1) * cols;
     const double* center = src + i * cols;
     const double* below = src + (i + 1) * cols;
@@ -52,7 +53,8 @@ inline void apply_stencil(const Grid& old_grid, Grid& new_grid) {
     out[0] = center[0];
     out[cols - 1] = center[cols - 1];
 
-    for (std::size_t j = 1; j < cols - 1; ++j) {
+    #pragma omp simd
+    for (std::size_t j{1}; j < cols - 1; ++j) {
       out[j] = 0.5 * center[j] + 0.125 * (above[j] + below[j] + center[j - 1] + center[j + 1]);
     }
   }
