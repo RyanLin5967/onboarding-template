@@ -81,14 +81,15 @@ inline void apply_stencil(const Grid& old_grid, Grid& new_grid) {
     return;
   }
 
-  // copy top/bottom rows
-  std::copy_n(old_view.row(0), extent.cols, new_view.row(0));
-  std::copy_n(old_view.row(extent.rows - 1), extent.cols, new_view.row(extent.rows - 1));
-
   #pragma omp parallel for schedule(static)
-  for (std::size_t i = 1; i < extent.rows - 1; ++i) {
-    apply_stencil_row(
-      old_view.row(i - 1), old_view.row(i), old_view.row(i + 1), new_view.row(i), extent.cols
-    );
+  for (std::size_t i = 0; i < extent.rows; ++i) {
+    // top and bottom rows are copied, not updated
+    if (i == 0 || i == extent.rows - 1) {
+      std::copy_n(old_view.row(i), extent.cols, new_view.row(i));
+    } else {
+      apply_stencil_row(
+        old_view.row(i - 1), old_view.row(i), old_view.row(i + 1), new_view.row(i), extent.cols
+      );
+    }
   }
 }
