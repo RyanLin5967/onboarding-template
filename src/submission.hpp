@@ -59,8 +59,8 @@ public:
 
 // out must not overlap the inputs
 inline void apply_stencil_row(
-  const double* above, const double* center, const double* below,
-  double* __restrict__ out, std::size_t cols
+  const double* __restrict__ above, const double* __restrict__ center,
+  const double* __restrict__ below, double* __restrict__ out, std::size_t cols
 ) {
   out[0] = center[0];
   out[cols - 1] = center[cols - 1];
