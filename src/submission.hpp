@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <cassert>
 #include <cstddef>
 #include <stdexcept>
 #include <vector>
@@ -43,10 +44,12 @@ public:
   }
 
   double& operator()(std::size_t i, std::size_t j) {
+    assert(i < extent_.rows && j < extent_.cols);
     return cells_[i * stride_ + j];
   }
 
   double  operator()(std::size_t i, std::size_t j) const {
+    assert(i < extent_.rows && j < extent_.cols);
     return cells_[i * stride_ + j];
   }
 
