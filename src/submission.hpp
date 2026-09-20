@@ -22,8 +22,8 @@ struct GridView {
 class Grid {
 private:
   // x86-64 cache line
-  static constexpr std::size_t kLineBytes{64};
-  static constexpr std::size_t kDoublesPerLine{kLineBytes / sizeof(double)};
+  static constexpr std::size_t kCacheLineBytes{64};
+  static constexpr std::size_t kDoublesPerCacheLine{kCacheLineBytes / sizeof(double)};
 
   Extent extent_;
   std::size_t stride_;
@@ -32,8 +32,8 @@ private:
 public:
   Grid(std::size_t rows, std::size_t cols)
     : extent_{rows, cols}
-    // pad rows out to whole lines
-    , stride_{(cols + kDoublesPerLine - 1) / kDoublesPerLine * kDoublesPerLine}
+    // whole-line rows, so every row has the same alignment
+    , stride_{(cols + kDoublesPerCacheLine - 1) / kDoublesPerCacheLine * kDoublesPerCacheLine}
     , cells_(rows * stride_, 0.0)
   {
     // the round-up wraps near SIZE_MAX
