@@ -77,6 +77,8 @@ inline void apply_stencil(const Grid& old_grid, Grid& new_grid) {
   const GridView<double> new_view{new_grid.view()};
   const Extent extent{old_view.extent};
 
+  assert(extent.rows == new_view.extent.rows && extent.cols == new_view.extent.cols);
+
   if (extent.rows == 0 || extent.cols == 0) {
     return;
   }
