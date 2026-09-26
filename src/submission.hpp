@@ -1,3 +1,5 @@
+// Harness needs Grid(rows, cols), operator()(i, j) and apply_stencil. The rest is internal.
+
 #pragma once
 
 #include <algorithm>
