@@ -37,7 +37,7 @@ public:
     , stride_{(cols + kDoublesPerCacheLine - 1) / kDoublesPerCacheLine * kDoublesPerCacheLine}
     , cells_(rows * stride_, 0.0)
   {
-    // the round-up wraps near SIZE_MAX
+    // the round-up and rows * stride_ both wrap near SIZE_MAX
     if (stride_ < cols || (rows != 0 && cells_.size() / rows != stride_)) {
       throw std::length_error("grid extent overflows size_t");
     }
@@ -65,7 +65,7 @@ inline void apply_stencil_row(
   out[0] = center[0];
   out[cols - 1] = center[cols - 1];
 
-  // g++ -fopenmp won't take braces in an omp loop
+  // omp needs j = 1 here, g++ rejects j{1}
   #pragma omp simd
   for (std::size_t j = 1; j < cols - 1; ++j) {
     out[j] = 0.5 * center[j] + 0.125 * (above[j] + below[j] + center[j - 1] + center[j + 1]);
@@ -83,7 +83,7 @@ inline void apply_stencil(const Grid& old_grid, Grid& new_grid) {
     return;
   }
 
-  // copy top/bottom rows
+  // top and bottom are copied, left and right happen per row in the kernel
   std::copy_n(old_view.row(0), extent.cols, new_view.row(0));
   std::copy_n(old_view.row(extent.rows - 1), extent.cols, new_view.row(extent.rows - 1));
 
